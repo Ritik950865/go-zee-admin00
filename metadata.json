@@ -1,0 +1,6 @@
+{
+  "name": "GO ZEE Admin",
+  "description": "GO ZEE bike taxi & two-wheeler fleet management admin panel dashboard with real-time ride tracking, driver onboarding, and fare controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
