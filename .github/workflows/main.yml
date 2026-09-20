@@ -1,15 +1,49 @@
-name: Build GO ZEE Delivery Partner APK
+
+
+name: Build GO ZEE Admin Panel APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Build Admin Panel APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Extract Project ZIP
+        run: |
+          mkdir -p extracted
+
+          if [ ! -f "go-zee-admin-fixed-final.zip" ]; then
+            echo "ERROR: Project ZIP not found"
+            exit 1
+          fi
+
+          unzip -o go-zee-admin-fixed-final.zip -d extracted
+
+      - name: Locate Flutter Project
+        run: |
+          PROJECT_DIR=$(find extracted -name pubspec.yaml \
+            -type f -printf '%h\n' | head -n 1)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: pubspec.yaml not found in ZIP"
+            echo "Upload a complete Flutter project ZIP."
+            exit 1
+          fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Found Flutter project: $PROJECT_DIR"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -17,17 +51,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
+      - name: Check Project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          flutter --version
+          flutter pub get
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Admin Debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter build apk --debug
 
-      - name: Upload APK
+      - name: Upload Admin APK
         uses: actions/upload-artifact@v4
         with:
-          name: GO-ZEE-Delivery-Partner-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: GO-ZEE-Admin-Panel-APK
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
